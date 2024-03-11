@@ -1,0 +1,93 @@
+# !/bin/bash
+
+set -e
+
+STEP_FILE="/tmp/docker_setup_step.txt"
+PROGRESS_STEP=0
+STEP=0
+
+if [ $1 ] ; then
+    if [ "$1" = "-h" ] ; then
+        echo "Usage: setup_docker [-h | #]"
+        echo "OPTIONS:"
+        echo "-h : Show this help"
+        echo "#  : Start at step number (ex: 'setup_docker 0' for restart)"
+        echo "Running without option will default to last sucessful step. Step is kept at $STEP_FILE"
+        exit
+    fi
+    STEP=$1
+    echo Restart
+else
+    STEP=$(cat $STEP_FILE)
+    echo Continue
+    echo $STEP
+fi
+
+checkstep () {
+    if [ $PROGRESS_STEP -eq $STEP ] ; then
+        echo $STEP > $STEP_FILE
+        echo 1
+    fi
+}
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt update
+    sudo apt upgrade -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt install gnome-terminal -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    # Add Docker's official GPG key:
+    sudo apt-get update
+    sudo apt-get install ca-certificates curl -y
+    sudo install -m 0755 -d /etc/apt/keyrings
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    # Add the repository to Apt sources:
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    # echo Download the latest deb file
+    # echo "https://docs.docker.com/desktop/install/ubuntu/"
+    wget "https://desktop.docker.com/linux/main/amd64/139021/docker-desktop-4.28.0-amd64.deb?utm_source=docker&utm_medium=webreferral&utm_campaign=docs-driven-download-linux-amd64&_gl=1*a6rxd4*_ga*NzQ5Njc0ODYxLjE3MDkyNDEwMTI.*_ga_XJWPQMJYHQ*MTcwOTI0MTAxMi4xLjEuMTcwOTI0MTM1NC42MC4wLjA." \
+        -O docker.deb
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt-get update
+    sudo apt-get install ./docker.deb -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    echo Install successful!
+    rm $STEP_FILE
+    exit
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))

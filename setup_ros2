@@ -1,0 +1,212 @@
+# !/bin/bash
+
+# Recommended 12GB of memory (tested on 8GB RAM and 8GB Swap)
+
+# set -e
+LOG_FILE=latest.log
+
+# exec 3>&1 1>>${LOG_FILE} 2>&1
+
+
+STEP_FILE="/tmp/setup_ros_step.txt"
+PROGRESS_STEP=0
+STEP=0
+
+DEVEL="humble"
+# DEVEL="iron"
+
+if [ $1 ] ; then
+    if [ "$1" = "-h" ] ; then
+        echo "Usage: setup_ros2 [-h | #]"
+        echo "OPTIONS:"
+        echo "-h : Show this help"
+        echo "#  : Start at step number (ex: 'setup_ros2 0' for restart)"
+        echo "Running without option will default to last sucessful step. Step is kept at $STEP_FILE"
+        exit
+    fi
+    STEP=$1
+    echo Restart
+else
+    STEP=$(cat $STEP_FILE)
+    echo Continue
+    echo $STEP
+fi
+
+checkstep () {
+    if [ $PROGRESS_STEP -eq $STEP ] ; then
+        echo $STEP > $STEP_FILE
+        echo 1
+    fi
+}
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt update
+    sudo apt upgrade -y
+    sudo apt install locales -y
+    sudo locale-gen en_US en_US.UTF-8
+    sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    # ROS2 python disable warning
+    export PYTHONWARNINGS="ignore:setup.py install is deprecated::setuptools.command.install"
+
+    locale  # verify settings
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt install software-properties-common -y
+    sudo add-apt-repository universe -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt update && sudo apt install curl -y
+    sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt update
+    sudo apt install ros-dev-tools -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt install ros-${DEVEL}-desktop-full -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt-get install -y \
+    ros-${DEVEL}-joint-state-publisher-gui \
+    ros-${DEVEL}-xacro \
+    ros-${DEVEL}-image-transport \
+    ros-${DEVEL}-vision-msgs \
+    ros-${DEVEL}-actuator-msgs \
+    software-properties-common \
+    wget \
+    lsb-release \
+    gnupg
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    # Add OSRF packages keyring and repository
+    sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+    sudo apt-get update
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt update
+    sudo apt upgrade -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+
+
+
+
+
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    if [ -e ~/capra_ws/src ] ; then
+        echo Skipping mkdir
+    else
+        mkdir -p ~/capra_ws/src
+    fi
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+cd ~/capra_ws/src
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    if [ -e ./rove ] ; then
+        echo Skipping cloning rove
+    else
+        git clone https://github.com/clubcapra/rove.git
+    fi
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo apt-get install -y gz-harmonic
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    git clone https://github.com/gazebosim/ros_gz.git -b $DEVEL
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+echo "MAKE SURE TO SOURCE AND RE-RUN THIS SCRIPT!!!!!!!"
+echo "Please run"
+echo "source /opt/ros/${DEVEL}/setup.bash"
+sleep 2
+
+cd ..
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    sudo rosdep init
+    rosdep update
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    rosdep install -r -i --from-paths src --rosdistro ${DEVEL} -y
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    colcon build
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
+    echo "source ~/capra_ws/install/setup.bash" >> ~/.bashrc
+    echo Make sure to restart your terminal!!!
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    echo Install successful!
+    rm $STEP_FILE
+    exit
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
