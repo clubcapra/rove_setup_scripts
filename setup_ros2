@@ -48,7 +48,7 @@ checkstep () {
 # PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
 
-# Prepare for ROS 2 installation
+# 0 Prepare for ROS 2 installation
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update
@@ -57,14 +57,13 @@ if [ $(checkstep) ] ; then
     sudo locale-gen en_US en_US.UTF-8
     sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
     export LANG=en_US.UTF-8
-    # ROS2 python disable warning
-    export PYTHONWARNINGS="ignore:setup.py install is deprecated::setuptools.command.install"
+    
 
     locale  # verify settings
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Get ROS 2 dependencies
+# 1 Get ROS 2 dependencies
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt install software-properties-common -y
@@ -72,7 +71,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Grab ROS 2 gpg key
+# 2 Grab ROS 2 gpg key
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update && sudo apt install curl -y
@@ -80,14 +79,14 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Setup ROS 2 gpg key
+# 3 Setup ROS 2 gpg key
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Install ROS 2 dev tools
+# 4 Install ROS 2 dev tools
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update
@@ -95,14 +94,14 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Install ROS 2
+# 5 Install ROS 2
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt install ros-${DEVEL}-desktop-full -y
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Install Gazebo dependencies
+# 6 Install Gazebo dependencies
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt-get install -y \
@@ -118,7 +117,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Add OSRF packages keyring and repository
+# 7 Add OSRF packages keyring and repository
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
@@ -127,7 +126,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Update apt
+# 8 Update apt
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update
@@ -135,7 +134,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Setup capra_ws or skip if already done
+# 9 Setup capra_ws or skip if already done
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     if [ -e ~/capra_ws/src ] ; then
@@ -150,7 +149,14 @@ PROGRESS_STEP=$((PROGRESS_STEP + 1))
 # This is required to prevent skipping a cd
 cd ~/capra_ws/src
 
-# Clone Rove repo or skip
+# 10 Clone Gazebo repo
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    git clone https://github.com/gazebosim/ros_gz.git -b $DEVEL
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+# 11 Clone Rove repo or skip
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     if [ -e ./rove ] ; then
@@ -161,19 +167,13 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Install Gazebo
+# 12 Install Gazebo
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt-get install -y gz-harmonic
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Clone Gazebo repo
-if [ $(checkstep) ] ; then
-    STEP=$((STEP + 1))
-    git clone https://github.com/gazebosim/ros_gz.git -b $DEVEL
-fi
-PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
 # IMPORTANT
 echo "MAKE SURE TO SOURCE AND RE-RUN THIS SCRIPT!!!!!!!"
@@ -181,10 +181,17 @@ echo "Please run"
 echo "source /opt/ros/${DEVEL}/setup.bash"
 sleep 2
 
+# 13 Import repos
+if [ $(checkstep) ] ; then
+    STEP=$((STEP + 1))
+    vcs import ./rove/src < ./rove/rove.repos
+fi
+PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
 # Again, cd are kept out of checkpoints
 cd ..
 
-# Init and update rosdep
+# 14 Init and update rosdep
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo rosdep init
@@ -192,21 +199,23 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Install rosdep packages
+# 15 Install rosdep packages
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     rosdep install -r -i --from-paths src --rosdistro ${DEVEL} -y
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Build workspace
+# 16 Build workspace
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
-    colcon build
+    # ROS2 python disable warning
+    export PYTHONWARNINGS="ignore:setup.py install is deprecated::setuptools.command.install"
+    colcon build --symlink-install
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# Add source instructions to bashrc
+# 17 Add source instructions to bashrc
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
@@ -215,7 +224,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
+# 18 Cleanup
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     echo Install successful!
