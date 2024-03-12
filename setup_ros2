@@ -3,18 +3,18 @@
 # Recommended 12GB of memory (tested on 8GB RAM and 8GB Swap)
 
 # set -e
-LOG_FILE=latest.log
 
-# exec 3>&1 1>>${LOG_FILE} 2>&1
-
-
+# Setup checkpoint
 STEP_FILE="/tmp/setup_ros_step.txt"
 PROGRESS_STEP=0
 STEP=0
 
+# Select ROS 2 devel
 DEVEL="humble"
 # DEVEL="iron"
 
+
+# Check parameters
 if [ $1 ] ; then
     if [ "$1" = "-h" ] ; then
         echo "Usage: setup_ros2 [-h | #]"
@@ -32,6 +32,7 @@ else
     echo $STEP
 fi
 
+# Function to check step and increase progress step
 checkstep () {
     if [ $PROGRESS_STEP -eq $STEP ] ; then
         echo $STEP > $STEP_FILE
@@ -39,7 +40,15 @@ checkstep () {
     fi
 }
 
+# To add more steps, use this template, and replace 'exit' with your code
+# if [ $(checkstep) ] ; then
+#     STEP=$((STEP + 1))
+#     exit
+# fi
+# PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+
+# Prepare for ROS 2 installation
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update
@@ -55,6 +64,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Get ROS 2 dependencies
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt install software-properties-common -y
@@ -62,7 +72,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
+# Grab ROS 2 gpg key
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update && sudo apt install curl -y
@@ -70,14 +80,14 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
+# Setup ROS 2 gpg key
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
+# Install ROS 2 dev tools
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update
@@ -85,12 +95,14 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Install ROS 2
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt install ros-${DEVEL}-desktop-full -y
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Install Gazebo dependencies
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt-get install -y \
@@ -106,16 +118,16 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Add OSRF packages keyring and repository
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
-    # Add OSRF packages keyring and repository
     sudo wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
     sudo apt-get update
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
+# Update apt
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt update
@@ -123,14 +135,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
-
-
-
-
-
-
-
+# Setup capra_ws or skip if already done
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     if [ -e ~/capra_ws/src ] ; then
@@ -140,8 +145,12 @@ if [ $(checkstep) ] ; then
     fi
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
+# Leave this outside of checkpoints
+# This is required to prevent skipping a cd
 cd ~/capra_ws/src
 
+# Clone Rove repo or skip
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     if [ -e ./rove ] ; then
@@ -152,27 +161,30 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
-
-
+# Install Gazebo
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo apt-get install -y gz-harmonic
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Clone Gazebo repo
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     git clone https://github.com/gazebosim/ros_gz.git -b $DEVEL
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# IMPORTANT
 echo "MAKE SURE TO SOURCE AND RE-RUN THIS SCRIPT!!!!!!!"
 echo "Please run"
 echo "source /opt/ros/${DEVEL}/setup.bash"
 sleep 2
 
+# Again, cd are kept out of checkpoints
 cd ..
+
+# Init and update rosdep
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     sudo rosdep init
@@ -180,20 +192,21 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Install rosdep packages
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     rosdep install -r -i --from-paths src --rosdistro ${DEVEL} -y
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
-
+# Build workspace
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     colcon build
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
+# Add source instructions to bashrc
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
