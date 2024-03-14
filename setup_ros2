@@ -140,14 +140,14 @@ if [ $(checkstep) ] ; then
     if [ -e ~/capra_ws/src ] ; then
         echo Skipping mkdir
     else
-        mkdir -p ~/capra_ws/src
+        mkdir -p ~/capra_ws
     fi
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
 # Leave this outside of checkpoints
 # This is required to prevent skipping a cd
-cd ~/capra_ws/src
+cd ~/capra_ws
 
 # 10 Clone Gazebo repo
 if [ $(checkstep) ] ; then
@@ -174,7 +174,6 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-
 # IMPORTANT
 echo "MAKE SURE TO SOURCE AND RE-RUN THIS SCRIPT!!!!!!!"
 echo "Please run"
@@ -187,9 +186,6 @@ if [ $(checkstep) ] ; then
     vcs import ./rove/src < ./rove/rove.repos
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
-
-# Again, cd are kept out of checkpoints
-cd ..
 
 # 14 Init and update rosdep
 if [ $(checkstep) ] ; then
@@ -219,7 +215,7 @@ PROGRESS_STEP=$((PROGRESS_STEP + 1))
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
-    echo "source ~/capra_ws/install/setup.bash" >> ~/.bashrc
+    echo "source ~/capra_ws/rove/install/setup.bash" >> ~/.bashrc
     echo Make sure to restart your terminal!!!
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
