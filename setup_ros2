@@ -9,6 +9,7 @@ STEP_FILE="/tmp/setup_ros_step.txt"
 PROGRESS_STEP=0
 STEP=0
 
+
 # Select ROS 2 devel
 DEVEL="humble"
 # DEVEL="iron"
@@ -25,6 +26,9 @@ case $SHELL in
    exit 0
 esac
 
+if ! [ -f $STEP_FILE ]; then
+    echo 0 > $STEP_FILE
+fi
 
 # Check parameters
 if [ $1 ] ; then
@@ -67,6 +71,8 @@ checkstep () {
         echo 1
     fi
 }
+
+
 
 # To add more steps, use this template, and replace 'exit' with your code
 # if [ $(checkstep) ] ; then
@@ -162,7 +168,7 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# 9 Setup capra_ws or skip if already done
+# 9 Setup rove or skip if already done
 if [ $(checkstep) ] ; then
     STEP=$((STEP + 1))
     if [ -e ~/rove ] ; then
@@ -177,16 +183,16 @@ PROGRESS_STEP=$((PROGRESS_STEP + 1))
 # This is required to prevent skipping a cd
 cd ~/rove
 
-# 10 Clone Gazebo repo
-if [ $(checkstep) ] ; then
-    STEP=$((STEP + 1))
-    if [ -e ./ros_gz ] ; then
-        echo Skipping cloning gazebo
-    else
-        git clone https://github.com/gazebosim/ros_gz.git -b $DEVEL
-    fi
-fi
-PROGRESS_STEP=$((PROGRESS_STEP + 1))
+# # 10 Clone Gazebo repo
+# if [ $(checkstep) ] ; then
+#     STEP=$((STEP + 1))
+#     if [ -e ./ros_gz ] ; then
+#         echo Skipping cloning gazebo
+#     else
+#         git clone https://github.com/gazebosim/ros_gz.git -b $DEVEL
+#     fi
+# fi
+# PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
 # 11 Clone Rove repo or skip
 if [ $(checkstep) ] ; then
@@ -206,11 +212,13 @@ if [ $(checkstep) ] ; then
 fi
 PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
-# IMPORTANT
-echo "MAKE SURE TO SOURCE AND RE-RUN THIS SCRIPT!!!!!!!"
-echo "Please run"
-echo "source /opt/ros/${DEVEL}/setup${SHELL_EXT}"
-sleep 2
+if [ $(printenv | grep -i ROS_DISTRO) = '' ] ; then
+
+    echo "MAKE SURE TO SOURCE AND RE-RUN THIS SCRIPT!!!!!!!"
+    echo "Please run"
+    echo "source /opt/ros/${DEVEL}/setup${SHELL_EXT}"
+    exit 0
+fi
 
 # 13 Init and update rosdep
 if [ $(checkstep) ] ; then
@@ -259,16 +267,7 @@ PROGRESS_STEP=$((PROGRESS_STEP + 1))
 
 cd ~/rove/ros_gz
 
-# 18 Build gazebo_ros2
-if [ $(checkstep) ] ; then
-    STEP=$((STEP + 1))
-    # ROS2 python disable warning
-    export PYTHONWARNINGS="ignore:setup.py install is deprecated::setuptools.command.install"
-    rm -rf build
-    rm -rf install
-    colcon build --symlink-install --parallel-workers 1
-fi
-PROGRESS_STEP=$((PROGRESS_STEP + 1))
+
 
 # 19 Add source instructions to bashrc
 if [ $(checkstep) ] ; then
